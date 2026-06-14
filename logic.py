@@ -52,6 +52,19 @@ PERCENTAGE_BASED_MECHANISMS = {MECHANISM_OPTIONS[0], MECHANISM_OPTIONS[1]}
 DIRECT_INDIRECT_OPTIONS = ["Direct", "Indirect"]
 
 
+def format_mechanisms(mechanism_list, other_text=""):
+    """Returns a human-readable string for a list of selected mechanism options."""
+    if not mechanism_list:
+        return "Not specified"
+    parts = []
+    for m in mechanism_list:
+        if m == "Other":
+            parts.append(other_text or "Other (unspecified)")
+        else:
+            parts.append(m)
+    return "; ".join(parts)
+
+
 # =============================================================================
 # RORC EXEMPTION CATEGORIES (Section 6 of PRD)
 # =============================================================================
@@ -180,12 +193,16 @@ def notice_status_flag(status):
     }.get(status, ("info", "Unknown"))
 
 
-def rom_match_flag(rom_match, mechanism, percentage_based_mechanisms=PERCENTAGE_BASED_MECHANISMS):
+def rom_match_flag(rom_match, mechanisms, percentage_based_mechanisms=PERCENTAGE_BASED_MECHANISMS):
     """
     Returns (severity, label) describing how well the Register of Members
-    match supports the claimed mechanism of control.
+    match supports the claimed mechanism(s) of control.
+
+    mechanisms: list of selected mechanism-of-control option strings.
     """
-    is_pct_mechanism = mechanism in percentage_based_mechanisms
+    if mechanisms is None:
+        mechanisms = []
+    is_pct_mechanism = any(m in percentage_based_mechanisms for m in mechanisms)
 
     if not rom_match.get("found"):
         if is_pct_mechanism:

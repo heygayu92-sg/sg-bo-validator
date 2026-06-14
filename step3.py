@@ -8,7 +8,7 @@ outstanding items, and the downloadable PDF validation report.
 
 import streamlit as st
 
-from logic import notice_status_flag, rom_match_flag
+from logic import notice_status_flag, rom_match_flag, format_mechanisms
 from report import generate_report_pdf
 
 
@@ -22,9 +22,7 @@ def render():
     for c in controllers:
         with st.container(border=True):
             st.markdown(f"#### {c['display_name']} ({c['category'].replace('_', ' ').title()})")
-            mech = c.get("mechanism") or "Not specified"
-            if mech == "Other":
-                mech = c.get("other_mechanism_text") or "Other (unspecified)"
+            mech = format_mechanisms(c.get("mechanism"), c.get("other_mechanism_text", ""))
             st.write(f"**Mechanism of control:** {mech}")
             st.write(f"**Direct / Indirect:** {c.get('direct_or_indirect', 'Not specified')}")
 

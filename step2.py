@@ -42,7 +42,7 @@ from extraction import (
 from logic import (
     MECHANISM_OPTIONS, EXEMPTION_CATEGORIES, EXEMPTION_LABELS,
     PERCENTAGE_BASED_MECHANISMS, notice_status_flag, rom_match_flag,
-    cross_field_consistency_check,
+    cross_field_consistency_check, format_mechanisms,
 )
 from sgx_listed_companies import check_sgx_listed
 
@@ -106,7 +106,7 @@ def render_controller_card(c):
     v = c["verification"]
 
     with st.container(border=True):
-        mech_display = c["mechanism"] if c["mechanism"] != "Other" else (c.get("other_mechanism_text") or "Other")
+        mech_display = format_mechanisms(c["mechanism"], c.get("other_mechanism_text", ""))
         st.markdown(f"### {c['display_name']} ({c['category'].replace('_', ' ').title()})")
         st.caption(f"Mechanism of control: {mech_display} — {c['direct_or_indirect']}")
 

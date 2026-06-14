@@ -17,6 +17,7 @@ from extraction import get_client, extract_document, RORC_PROMPT, ROM_PROMPT
 from logic import (
     MECHANISM_OPTIONS, MECHANISM_RULE_BASIS, DIRECT_INDIRECT_OPTIONS,
     entry_display_name, entry_key_id, cross_check_register_of_members,
+    format_mechanisms,
 )
 
 
@@ -29,7 +30,7 @@ def _init_controller(e, idx, rom_match):
         "display_name": entry_display_name(e),
         **e,
         "rom_match": rom_match,
-        "mechanism": None,
+        "mechanism": [],
         "other_mechanism_text": "",
         "direct_or_indirect": None,
         "notice_status": {"status": "not_provided"},  # updated in Step 2
@@ -157,22 +158,26 @@ def render():
             st.markdown("**User classification**")
             colC, colD = st.columns(2)
             with colC:
-                mech = st.selectbox(
-                    "Mechanism of control",
-                    options=MECHANISM_OPTIONS,
-                    key=f"mech_{c['id']}",
-                    index=MECHANISM_OPTIONS.index(c["mechanism"]) if c["mechanism"] in MECHANISM_OPTIONS else 0,
-                )
-                c["mechanism"] = mech
-                if mech == "Other":
+                st.write("Mechanism(s) of control (select all that apply):")
+                if not isinstance(c.get("mechanism"), list):
+                    c["mechanism"] = []
+                selected = []
+                for opt in MECHANISM_OPTIONS:
+                    checked = st.checkbox(
+                        opt, value=opt in c["mechanism"], key=f"mech_{c['id']}_{opt}",
+                    )
+                    if checked:
+                        selected.append(opt)
+                        if opt != "Other":
+                            st.caption(f"&nbsp;&nbsp;&nbsp;&nbsp;Legal basis: {MECHANISM_RULE_BASIS.get(opt, '-')}")
+                c["mechanism"] = selected
+                if "Other" in selected:
                     c["other_mechanism_text"] = st.text_input(
-                        "Please specify the mechanism of control",
+                        "Please specify the other mechanism of control",
                         key=f"mech_other_{c['id']}", value=c.get("other_mechanism_text", ""),
                     )
-                else:
-                    st.caption(f"Legal basis: {MECHANISM_RULE_BASIS.get(mech, '-')}")
             with colD:
-                if mech == MECHANISM_OPTIONS[6]:  # fallback director
+                if MECHANISM_OPTIONS[6] in c["mechanism"]:  # fallback director selected
                     c["direct_or_indirect"] = "Not applicable"
                     st.selectbox("Direct / Indirect", options=["Not applicable"], key=f"dir_{c['id']}", disabled=True)
                 else:
@@ -193,10 +198,13 @@ def render():
                 f"become its own item to investigate in Step 2."
             )
 
-    # ---- All dropdowns set? ----
-    all_set = all(c["mechanism"] and (c["direct_or_indirect"] or c["mechanism"] == MECHANISM_OPTIONS[6]) for c in controllers)
+    # ---- All checkboxes/dropdowns set? ----
+    all_set = all(
+        c["mechanism"] and (c["direct_or_indirect"] or MECHANISM_OPTIONS[6] in c["mechanism"])
+        for c in controllers
+    )
     if not all_set:
-        st.caption("Please select a mechanism of control (and direct/indirect, where applicable) for every controller above.")
+        st.caption("Please select at least one mechanism of control (and direct/indirect, where applicable) for every controller above.")
         return
 
     # ---- Confirmation screen ----
@@ -209,7 +217,7 @@ def render():
     )
 
     for c in controllers:
-        mech = c["mechanism"] if c["mechanism"] != "Other" else (c["other_mechanism_text"] or "Other (unspecified)")
+        mech = format_mechanisms(c["mechanism"], c.get("other_mechanism_text", ""))
         st.write(f"- **{c['display_name']}** ({c['category'].replace('_', ' ').title()}) — {mech}, "
                  f"{c['direct_or_indirect']}")
     for h in unexplained_holders:

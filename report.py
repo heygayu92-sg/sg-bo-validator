@@ -23,7 +23,7 @@ from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.lib import colors
 from reportlab.lib.units import inch
 
-from logic import notice_status_flag, rom_match_flag
+from logic import notice_status_flag, rom_match_flag, format_mechanisms
 
 
 def _table_style(header=True):
@@ -118,12 +118,10 @@ def generate_report_pdf(company_name, uen, controllers, unexplained_holders):
     for c in controllers:
         story.append(Paragraph(f"{c['display_name']} ({c['category'].replace('_', ' ').title()})", h2))
 
-        mech = c.get("mechanism", "Not specified")
-        if mech == "Other":
-            mech = c.get("other_mechanism_text") or "Other (unspecified)"
+        mech = format_mechanisms(c.get("mechanism"), c.get("other_mechanism_text", ""))
 
         rom = c.get("rom_match", {})
-        rom_sev, rom_label = rom_match_flag(rom, c.get("mechanism", ""))
+        rom_sev, rom_label = rom_match_flag(rom, c.get("mechanism"))
 
         notice = c.get("notice_status", {})
         notice_sev, notice_label = notice_status_flag(notice.get("status"))
